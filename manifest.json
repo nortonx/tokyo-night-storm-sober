@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Tokyo Night Storm",
+  "version": "1.0.0",
+  "description": "Tokyo Night Storm com contraste ajustado para leitura confortavel. Derivado da paleta canonica de Enkia.",
+
+  "theme": {
+    "images": {
+      "theme_ntp_background": "images/ntp_background.png"
+    },
+
+    "colors": {
+      "frame": [26, 27, 38],
+      "frame_inactive": [22, 22, 30],
+      "frame_incognito": [22, 22, 30],
+      "frame_incognito_inactive": [22, 22, 30],
+
+      "background_tab": [31, 35, 53],
+      "background_tab_inactive": [22, 22, 30],
+      "background_tab_incognito": [31, 35, 53],
+      "background_tab_incognito_inactive": [22, 22, 30],
+
+      "tab_text": [192, 202, 245],
+      "tab_background_text": [154, 165, 206],
+      "tab_background_text_inactive": [121, 130, 169],
+      "tab_background_text_incognito": [154, 165, 206],
+      "tab_background_text_inactive_incognito": [121, 130, 169],
+
+      "toolbar": [36, 40, 59],
+      "toolbar_button_icon": [192, 202, 245],
+      "toolbar_text": [192, 202, 245],
+      "bookmark_text": [169, 177, 214],
+      "button_background": [41, 46, 66],
+
+      "omnibox_background": [26, 27, 38],
+      "omnibox_text": [192, 202, 245],
+
+      "ntp_background": [26, 27, 38],
+      "ntp_text": [192, 202, 245],
+      "ntp_link": [122, 162, 247],
+      "ntp_header": [65, 72, 104]
+    },
+
+    "properties": {
+      "ntp_background_alignment": "bottom",
+      "ntp_background_repeat": "no-repeat",
+      "ntp_logo_alternate": 1
+    }
+  }
+}

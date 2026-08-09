@@ -1,0 +1,6 @@
+# Chrome regenerates this whenever the theme is loaded unpacked
+Cached Theme.pak
+
+# build output
+dist/
+*.zip

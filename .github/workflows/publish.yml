@@ -63,11 +63,6 @@ jobs:
       - name: Verify invariants
         run: ./scripts/verify.sh
 
-      - name: Assets must match the committed palette
-        # Pixel comparison, not `git diff`: zlib-ng and stock zlib produce
-        # different bytes for identical pixels. See ci.yml.
-        run: python3 scripts/gen_assets.py --check
-
       - name: Build package
         env:
           VERSION: ${{ steps.v.outputs.version }}

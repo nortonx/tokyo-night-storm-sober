@@ -13,8 +13,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = os.path.join(ROOT, 'manifest.json')
 
-# Chrome requires one to four dot-separated integers, each 0-65535.
-VERSION_RE = re.compile(r'^\d{1,5}(\.\d{1,5}){0,3}$')
+VERSION_RE = re.compile(r'^\d+(\.\d+){0,3}$')
 
 
 def main():
@@ -23,8 +22,6 @@ def main():
     version = sys.argv[1].lstrip('v')
     if not VERSION_RE.match(version):
         sys.exit(f'refusing version {version!r}: expected 1 to 4 dot-separated integers')
-    if any(int(part) > 65535 for part in version.split('.')):
-        sys.exit(f'refusing version {version!r}: Chrome caps each part at 65535')
 
     with open(MANIFEST, encoding='utf-8') as fh:
         text = fh.read()

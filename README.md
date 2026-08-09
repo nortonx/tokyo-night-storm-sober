@@ -43,17 +43,12 @@ carried by label contrast instead, active `#c0caf5` at 9.02:1 against idle
 ## Development
 
 ```bash
-./scripts/verify.sh            # all invariants; CI runs exactly this
-python3 scripts/gen_assets.py  # regenerate icons and tile from manifest colours
-./scripts/package.sh           # build dist/tokyo-night-storm-reading-<version>.zip
+./scripts/verify.sh   # store limits CI also checks
+./scripts/package.sh  # build dist/tokyo-night-storm-reading-<version>.zip
 ```
 
 Load unpacked from the repository root via `chrome://extensions`. Chrome writes
 a `Cached Theme.pak` there when it does; it is git-ignored and safe to delete.
-
-`scripts/gen_assets.py` uses only the Python standard library and is
-byte-deterministic. CI regenerates the assets and fails if they differ from
-what is committed, so an image library must never be introduced here.
 
 The package is built from an allowlist of `manifest.json`, `images/`, and
 `_locales/`. That guards the repository root; anything placed *inside* those
@@ -94,4 +89,4 @@ an incognito window.
 `images/icon-128.png` is the extension icon. It is full bleed and ships in the
 package. `store/icon-128.png` is the store listing icon: the same artwork at
 96x96 centred in 128x128 with transparent padding, which the store requires. It
-never ships. Both are generated; do not hand-edit either.
+never ships. Both are committed PNGs; edit them with an image editor.

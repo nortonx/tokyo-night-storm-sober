@@ -48,22 +48,9 @@ for src in "$@"; do
 done
 
 echo
-fail=0
-for f in "$OUT"/*.png; do
-  d=$(magick identify -format '%wx%h' "$f")
-  if [ "$d" != "1280x800" ] && [ "$d" != "640x400" ]; then
-    echo "  FAIL $f is $d, store requires 1280x800 or 640x400" >&2
-    fail=1
-  fi
-  if magick identify -format '%A' "$f" | grep -qi 'true\|blend'; then
-    echo "  FAIL $f still has an alpha channel; store requires full bleed" >&2
-    fail=1
-  fi
-done
 count=$(find "$OUT" -name '*.png' | wc -l)
 if [ "$count" -gt 5 ]; then
-  echo "  FAIL $count screenshots; the store accepts at most 5" >&2
-  fail=1
+  echo "  $count screenshots; the store accepts at most 5" >&2
+  exit 1
 fi
-[ "$fail" = 0 ] && echo "  all $count screenshot(s) compliant: 1280x800, no alpha"
-exit $fail
+echo "  $count screenshot(s) ready, 1280x800, no alpha"

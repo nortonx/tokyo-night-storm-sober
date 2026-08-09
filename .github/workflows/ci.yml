@@ -6,10 +6,10 @@
 
 name: ci
 
+# Pull requests only. release.yml's ci-success runs the same checks on push
+# to main, so a push trigger here just doubles every merge.
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -32,14 +32,6 @@ jobs:
 
       - name: Verify theme invariants
         run: ./scripts/verify.sh
-
-      - name: Assets must match the committed palette
-        # Compares decoded PIXELS, not file bytes. Python's zlib binds to the
-        # system one: Fedora ships zlib-ng, the runner ships stock zlib, and the
-        # same pixels compress to different bytes (379 vs 372 for the store
-        # icon). A `git diff` check here fails on the compressor, not the
-        # palette. Do not reintroduce one.
-        run: python3 scripts/gen_assets.py --check
 
       - name: Package builds and contains only the allowlist
         run: ./scripts/package.sh

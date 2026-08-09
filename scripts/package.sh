@@ -5,7 +5,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ALLOW=(manifest.json images _locales)
+# LICENSE ships too: MIT requires the copyright notice in all copies, and the
+# package is what users receive. The README covers the repository, not the
+# distributed artifact.
+ALLOW=(manifest.json images _locales LICENSE)
 
 MANIFEST_VERSION=$(python3 -c "import json;print(json.load(open('manifest.json'))['version'])")
 EXPECTED="${1:-$MANIFEST_VERSION}"

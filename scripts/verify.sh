@@ -119,4 +119,9 @@ if errs:
 PY
 check "icons and tile exist at correct dimensions, manifest declares them" "$rc"
 
+echo "packaging"
+rc=0
+test -x scripts/package.sh || rc=$?
+check "scripts/package.sh exists and is executable" "$rc"
+
 exit $fail

@@ -92,4 +92,31 @@ if errs:
 PY
 check "locales present, manifest uses __MSG__ refs, lengths within limits" "$rc"
 
+echo "generated assets"
+rc=0
+python3 - <<'PY' || rc=$?
+import json, sys, os, struct
+errs = []
+m = json.load(open('manifest.json'))
+icons = m.get('icons', {})
+for size in ('16', '32', '48', '128'):
+    if icons.get(size) != f'images/icon-{size}.png':
+        errs.append(f'manifest icons[{size}] wrong or missing')
+wanted = [(f'images/icon-{s}.png', int(s), int(s)) for s in ('16','32','48','128')]
+wanted.append(('store/tile-440x280.png', 440, 280))
+for path, w, h in wanted:
+    if not os.path.exists(path):
+        errs.append(f'{path}: missing'); continue
+    with open(path, 'rb') as fh:
+        head = fh.read(24)
+    if head[:8] != b'\x89PNG\r\n\x1a\n':
+        errs.append(f'{path}: not a PNG'); continue
+    gw, gh = struct.unpack('>II', head[16:24])
+    if (gw, gh) != (w, h):
+        errs.append(f'{path}: expected {w}x{h}, got {gw}x{gh}')
+if errs:
+    print("\n".join('    ' + e for e in errs)); sys.exit(1)
+PY
+check "icons and tile exist at correct dimensions, manifest declares them" "$rc"
+
 exit $fail

@@ -51,4 +51,45 @@ if bad:
 PY
 check "all 24 colour keys present: 10 corrected, 14 untouched" "$rc"
 
+echo "i18n"
+rc=0
+python3 - <<'PY' || rc=$?
+import json, sys, os
+errs = []
+m = json.load(open('manifest.json'))
+if m.get('default_locale') != 'en':
+    errs.append(f"default_locale: expected 'en', got {m.get('default_locale')!r}")
+if m.get('name') != '__MSG_name__':
+    errs.append(f"name: expected '__MSG_name__', got {m.get('name')!r}")
+if m.get('description') != '__MSG_description__':
+    errs.append(f"description: expected '__MSG_description__', got {m.get('description')!r}")
+
+expected = {
+    'en': {
+        'name': 'Tokyo Night Storm (Reading)',
+        'description': "Tokyo Night Storm with contrast tuned for long reading sessions. Enkia's canonical palette. Mint address bar, red controls.",
+    },
+    'pt_BR': {
+        'name': 'Tokyo Night Storm (Reading)',
+        'description': 'Tokyo Night Storm com contraste ajustado para longas sessões de leitura. Paleta canônica da Enkia. Endereço em verde menta.',
+    },
+}
+for loc, want in expected.items():
+    path = f'_locales/{loc}/messages.json'
+    if not os.path.exists(path):
+        errs.append(f'{path}: missing'); continue
+    with open(path, encoding='utf-8') as fh:
+        got = json.load(fh)
+    for key, text in want.items():
+        actual = got.get(key, {}).get('message')
+        if actual != text:
+            errs.append(f'{path}: {key} mismatch')
+        limit = 75 if key == 'name' else 132
+        if actual and len(actual) > limit:
+            errs.append(f'{path}: {key} is {len(actual)} chars, limit {limit}')
+if errs:
+    print("\n".join('    ' + e for e in errs)); sys.exit(1)
+PY
+check "locales present, manifest uses __MSG__ refs, lengths within limits" "$rc"
+
 exit $fail

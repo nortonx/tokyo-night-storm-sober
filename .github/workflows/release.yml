@@ -17,6 +17,10 @@ on:
 
 permissions:
   contents: write
+  # Required by the "Trigger publish" step. Without it the dispatch API returns
+  # HTTP 403 "Resource not accessible by integration" and the release job goes red
+  # after the tag and Release already exist. Verified on the v0.1.1 run.
+  actions: write
 
 # IR4. cancel-in-progress MUST stay false: cancelling a release mid-push can leave
 # a tag pushed with no Release object.

@@ -4,3 +4,8 @@ Cached Theme.pak
 # build output
 dist/
 *.zip
+
+# local agent and OpenSpec tooling, not part of the theme
+.agent/
+.claude/
+openspec/

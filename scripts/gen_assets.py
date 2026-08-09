@@ -13,19 +13,24 @@ import zlib
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def png_bytes(width, height, rows):
-    """Encode rows of (r, g, b) tuples as a truecolour PNG."""
+def png_bytes(width, height, rows, alpha=False):
+    """Encode rows of (r, g, b) or (r, g, b, a) tuples as a PNG.
+
+    alpha=True emits colour type 6 (RGBA), needed for the store icon, which the
+    Web Store requires as 96x96 artwork inside 128x128 with transparent padding.
+    """
+    channels = 4 if alpha else 3
     raw = bytearray()
     for row in rows:
         raw.append(0)  # filter type 0, so output does not depend on a heuristic
-        for r, g, b in row:
-            raw += bytes((r, g, b))
+        for px in row:
+            raw += bytes(px[:channels])
 
     def chunk(tag, data):
         return (struct.pack('>I', len(data)) + tag + data
                 + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff))
 
-    ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+    ihdr = struct.pack('>IIBBBBB', width, height, 8, 6 if alpha else 2, 0, 0, 0)
     return (b'\x89PNG\r\n\x1a\n'
             + chunk(b'IHDR', ihdr)
             + chunk(b'IDAT', zlib.compress(bytes(raw), 9))
@@ -64,6 +69,27 @@ def render(width, height, colors):
     return px
 
 
+def store_icon(colors, total=128, art=96):
+    """128x128 with 96x96 artwork centred and the rest transparent.
+
+    The Web Store requires that padding; a full-bleed icon is rejected or looks
+    wrong against the store's own backgrounds. This is separate from the packaged
+    images/icon-128.png, which is the extension icon and IS full bleed.
+    """
+    inner = render(art, art, colors)
+    pad = (total - art) // 2
+    blank = (0, 0, 0, 0)
+    rows = []
+    for y in range(total):
+        if y < pad or y >= pad + art:
+            rows.append([blank] * total)
+            continue
+        src = inner[y - pad]
+        rows.append([blank] * pad + [(r, g, b, 255) for r, g, b in src]
+                    + [blank] * (total - pad - art))
+    return rows
+
+
 def main():
     with open(os.path.join(ROOT, 'manifest.json'), encoding='utf-8') as fh:
         colors = json.load(fh)['theme']['colors']
@@ -79,6 +105,13 @@ def main():
         with open(path, 'wb') as fh:
             fh.write(data)
         print(f'{rel}  {w}x{h}  {len(data)} bytes')
+
+    rel = os.path.join('store', 'icon-128.png')
+    path = os.path.join(ROOT, rel)
+    data = png_bytes(128, 128, store_icon(colors), alpha=True)
+    with open(path, 'wb') as fh:
+        fh.write(data)
+    print(f'{rel}  128x128 RGBA, 96x96 artwork + 16px padding  {len(data)} bytes')
 
 
 if __name__ == '__main__':

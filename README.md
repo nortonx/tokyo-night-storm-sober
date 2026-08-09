@@ -7,8 +7,12 @@ A Chrome theme. Tokyo Night Storm with contrast tuned for long reading sessions.
 Tokyo Night is the work of [Enkia](https://github.com/tokyo-night/tokyo-night-vscode-theme),
 distributed under the MIT License. This theme is a derived work: the palette
 follows the canonical Storm variant, and the colour values here are Enkia's.
-Those values were cross-checked against the
-[tokyonight.nvim](https://github.com/folke/tokyonight.nvim) port by folke.
+
+The canonical source is `themes/tokyo-night-storm-color-theme.json` in that
+repository. Every colour used here was verified present in that file. The older
+`enkia/tokyo-night-vscode-theme` URL returns HTTP 301 to the `tokyo-night` org;
+cite the current one. [tokyonight.nvim](https://github.com/folke/tokyonight.nvim)
+is a port, not the source, and should not be cited as the origin.
 
 `LICENSE` carries this project's MIT terms and reproduces Enkia's upstream
 notice. It ships inside the package as well as living in the repository, since
@@ -62,10 +66,32 @@ package only. These are Dashboard-only and must be done by hand:
 
 - [ ] Detailed description, English
 - [ ] Detailed description, Portuguese, via the locale dropdown
-- [ ] Screenshots, 1280x800, up to five
-- [ ] Store icon, 128x128, and the 440x280 tile from `store/`
+- [ ] Screenshots, exactly 1280x800, one to five, from `store/screenshots/`
+- [ ] Store icon `store/icon-128.png` and the tile `store/tile-440x280.png`
 - [ ] Category and language
 - [ ] Privacy tab: no permissions, no data collected
 
-Screenshots cannot be automated. Browser chrome is not capturable by DevTools
-or Playwright, which see page content only. Take them with an OS screenshot.
+### Screenshots
+
+DevTools and Playwright capture page content, not browser chrome, so these must
+be taken with an OS screenshot tool. `--load-extension` does not apply a theme
+either; install it via `chrome://extensions` first.
+
+Capture the window at any size, then normalise:
+
+    scripts/prepare_screenshots.sh ~/Pictures/shot-*.png
+
+That trims the compositor's rounded corners and drop shadow, which the store
+counts as padding, removes the alpha channel, and fits the result to exactly
+1280x800. Capturing larger than 1280x800 is preferred: downscaling supersamples,
+so text stays crisp. Output lands in `store/screenshots/`.
+
+Suggested set: new tab, two or three tabs with a URL showing the green domain,
+an incognito window.
+
+### Two different 128x128 icons
+
+`images/icon-128.png` is the extension icon. It is full bleed and ships in the
+package. `store/icon-128.png` is the store listing icon: the same artwork at
+96x96 centred in 128x128 with transparent padding, which the store requires. It
+never ships. Both are generated; do not hand-edit either.

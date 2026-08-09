@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/2976b080a49b7a800142e39e0e80c0e7804b134c..v0.2.0) - 2026-08-09
+#### Features
+- (**store**) add padded store icon, screenshot pipeline and listing copy - ([cafe612](https://github.com/nortonx/tokyo-night-storm-sober/commit/cafe6120ca25965f8e02fb36e35306140676000f)) - Norton Almeida
+#### Bug Fixes
+- (**ci**) compare generated assets by pixel, not by bytes - ([40b2c25](https://github.com/nortonx/tokyo-night-storm-sober/commit/40b2c25569a3078db9cd6cbd6346ef39ac8ad078)) - Norton Almeida
+- (**ci**) grant actions:write so the publish dispatch succeeds - ([2976b08](https://github.com/nortonx/tokyo-night-storm-sober/commit/2976b080a49b7a800142e39e0e80c0e7804b134c)) - Norton Almeida
+
+- - -
+
 ## [v0.1.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/3c64dcc6a05211112a68314a58b2981d2eaa6810..v0.1.1) - 2026-08-09
 #### Bug Fixes
 - (**ci**) dispatch publish explicitly after a release - ([3c64dcc](https://github.com/nortonx/tokyo-night-storm-sober/commit/3c64dcc6a05211112a68314a58b2981d2eaa6810)) - Norton Almeida

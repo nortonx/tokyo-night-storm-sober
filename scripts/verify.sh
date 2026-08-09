@@ -125,6 +125,10 @@ if errs:
 PY
 check "icons and tile exist at correct dimensions, manifest declares them" "$rc"
 
+rc=0
+python3 scripts/gen_assets.py --check >/dev/null 2>&1 || rc=$?
+check "generated assets match the palette (pixel comparison)" "$rc"
+
 echo "packaging"
 rc=0
 test -x scripts/package.sh || rc=$?

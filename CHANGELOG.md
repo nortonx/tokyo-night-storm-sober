@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.1.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/3c64dcc6a05211112a68314a58b2981d2eaa6810..v0.1.1) - 2026-08-09
+#### Bug Fixes
+- (**ci**) dispatch publish explicitly after a release - ([3c64dcc](https://github.com/nortonx/tokyo-night-storm-sober/commit/3c64dcc6a05211112a68314a58b2981d2eaa6810)) - Norton Almeida
+
+- - -
+
 ## [v0.1.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/a416be71c578963d641ed6007ec5a291c84a7605..v0.1.0) - 2026-08-09
 #### Features
 - (**assets**) generate icons and store tile from the palette - ([3cf3cc4](https://github.com/nortonx/tokyo-night-storm-sober/commit/3cf3cc4652fdc54a7f8416cc3d40266cfd771fae)) - Norton Almeida

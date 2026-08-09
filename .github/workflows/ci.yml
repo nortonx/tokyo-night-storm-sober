@@ -45,17 +45,4 @@ jobs:
 
       # IR1, CI leg: lint the commit RANGE, not a PR title.
       - name: Check commit messages
-        run: |
-          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
-            cog check --from-latest-tag
-          else
-            # No tags yet. The repository root is GitHub's auto-generated
-            # "Initial commit", which predates conventional commits and can never
-            # be made compliant without rewriting published history. Start one
-            # commit later. cog's RANGE is INCLUSIVE of its left side, unlike
-            # git's A..B, so this names the first commit to check, not the last
-            # to skip. This branch stops running once the first tag exists.
-            ROOT=$(git rev-list --max-parents=0 HEAD)
-            FIRST=$(git rev-list HEAD --not "$ROOT" | tail -1)
-            cog check "${FIRST}..HEAD"
-          fi
+        run: cog check --from-latest-tag

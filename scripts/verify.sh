@@ -104,20 +104,30 @@ for size in ('16', '32', '48', '128'):
         errs.append(f'manifest icons[{size}] wrong or missing')
 wanted = [(f'images/icon-{s}.png', int(s), int(s)) for s in ('16','32','48','128')]
 wanted.append(('store/tile-440x280.png', 440, 280))
+wanted.append(('store/icon-128.png', 128, 128))
 for path, w, h in wanted:
     if not os.path.exists(path):
         errs.append(f'{path}: missing'); continue
     with open(path, 'rb') as fh:
-        head = fh.read(24)
+        head = fh.read(26)
     if head[:8] != b'\x89PNG\r\n\x1a\n':
         errs.append(f'{path}: not a PNG'); continue
     gw, gh = struct.unpack('>II', head[16:24])
     if (gw, gh) != (w, h):
         errs.append(f'{path}: expected {w}x{h}, got {gw}x{gh}')
+    # The store icon must carry transparent padding (96x96 art in 128x128), so it
+    # has to be RGBA. The packaged extension icons are full bleed and must not be.
+    ctype = head[25]
+    if path == 'store/icon-128.png' and ctype != 6:
+        errs.append(f'{path}: colour type {ctype}, expected 6 (RGBA) for the padded store icon')
 if errs:
     print("\n".join('    ' + e for e in errs)); sys.exit(1)
 PY
 check "icons and tile exist at correct dimensions, manifest declares them" "$rc"
+
+rc=0
+python3 scripts/gen_assets.py --check >/dev/null 2>&1 || rc=$?
+check "generated assets match the palette (pixel comparison)" "$rc"
 
 echo "packaging"
 rc=0

@@ -34,14 +34,12 @@ jobs:
         run: ./scripts/verify.sh
 
       - name: Assets must match the committed palette
-        run: |
-          python3 scripts/gen_assets.py
-          if ! git diff --quiet -- images store; then
-            echo "Generated assets differ from what is committed." >&2
-            echo "Run: python3 scripts/gen_assets.py && git add images store" >&2
-            git --no-pager diff --stat -- images store >&2
-            exit 1
-          fi
+        # Compares decoded PIXELS, not file bytes. Python's zlib binds to the
+        # system one: Fedora ships zlib-ng, the runner ships stock zlib, and the
+        # same pixels compress to different bytes (379 vs 372 for the store
+        # icon). A `git diff` check here fails on the compressor, not the
+        # palette. Do not reintroduce one.
+        run: python3 scripts/gen_assets.py --check
 
       - name: Package builds and contains only the allowlist
         run: ./scripts/package.sh

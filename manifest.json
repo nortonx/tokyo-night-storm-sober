@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "default_locale": "en",
+  "name": "__MSG_name__",
+  "version": "1.0.0",
+  "description": "__MSG_description__",
+
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+
+  "theme": {
+    "images": {
+      "theme_ntp_background": "images/ntp_background.png"
+    },
+
+    "colors": {
+      "frame": [24, 27, 40],
+      "frame_inactive": [20, 22, 32],
+      "frame_incognito": [20, 22, 32],
+      "frame_incognito_inactive": [20, 22, 32],
+
+      "background_tab": [31, 35, 53],
+      "background_tab_inactive": [20, 22, 32],
+      "background_tab_incognito": [31, 35, 53],
+      "background_tab_incognito_inactive": [20, 22, 32],
+
+      "tab_text": [192, 202, 245],
+      "tab_background_text": [154, 165, 206],
+      "tab_background_text_inactive": [121, 130, 169],
+      "tab_background_text_incognito": [154, 165, 206],
+      "tab_background_text_inactive_incognito": [121, 130, 169],
+
+      "toolbar": [36, 40, 59],
+      "toolbar_button_icon": [247, 118, 142],
+      "toolbar_text": [192, 202, 245],
+      "bookmark_text": [169, 177, 214],
+      "button_background": [41, 46, 66],
+
+      "omnibox_background": [24, 27, 40],
+      "omnibox_text": [115, 218, 202],
+
+      "ntp_background": [24, 27, 40],
+      "ntp_text": [192, 202, 245],
+      "ntp_link": [122, 162, 247],
+      "ntp_header": [65, 72, 104]
+    },
+
+    "properties": {
+      "ntp_background_alignment": "bottom",
+      "ntp_background_repeat": "no-repeat",
+      "ntp_logo_alternate": 1
+    }
+  }
+}

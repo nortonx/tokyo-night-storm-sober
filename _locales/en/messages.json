@@ -1,0 +1,10 @@
+{
+  "name": {
+    "message": "Tokyo Night Storm (Reading)",
+    "description": "Extension name shown in the Web Store and chrome://extensions."
+  },
+  "description": {
+    "message": "Tokyo Night Storm with contrast tuned for long reading sessions. Enkia's canonical palette. Mint address bar, red controls.",
+    "description": "Short store summary, 132 character limit."
+  }
+}

@@ -4,11 +4,16 @@ A Chrome theme. Tokyo Night Storm with contrast tuned for long reading sessions.
 
 ## Attribution
 
-Tokyo Night is the work of [Enkia](https://github.com/enkia/tokyo-night-vscode-theme),
+Tokyo Night is the work of [Enkia](https://github.com/tokyo-night/tokyo-night-vscode-theme),
 distributed under the MIT License. This theme is a derived work: the palette
 follows the canonical Storm variant, and the colour values here are Enkia's.
+Those values were cross-checked against the
+[tokyonight.nvim](https://github.com/folke/tokyonight.nvim) port by folke.
 
-This repository is separately MIT licensed; see `LICENSE`.
+`LICENSE` carries this project's MIT terms and reproduces Enkia's upstream
+notice. It ships inside the package as well as living in the repository, since
+MIT requires the notice to travel with every copy and the package is what users
+actually receive.
 
 ## Palette decisions
 

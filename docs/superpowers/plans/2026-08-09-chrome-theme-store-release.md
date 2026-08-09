@@ -150,12 +150,12 @@ python3 -c "
 import json
 c = json.load(open('manifest.json'))['theme']['colors']
 print(len(c), 'colour keys')
-assert len(c) == 28, 'key count changed — a key was added or dropped'
+assert len(c) == 24, 'key count changed — a key was added or dropped'
 print('ok')
 "
 ```
 
-Expected: `28 colour keys` then `ok`.
+Expected: `24 colour keys` then `ok`.
 
 - [ ] **Step 6: Commit**
 

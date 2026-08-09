@@ -13,7 +13,7 @@ The working tree contained three files, none of them committed:
 
 | file | note |
 |---|---|
-| `manifest.json` | MV3 theme, 28 colour keys, one NTP image |
+| `manifest.json` | MV3 theme, 24 colour keys, one NTP image |
 | `images/ntp_background.png` | 2560x1440, 672827 bytes |
 | `Cached Theme.pak` | 1.8 MB, git-staged, Chrome-generated install cache |
 
@@ -90,7 +90,7 @@ Night **Night** values sat outside that cluster:
 | `frame_inactive`, `frame_incognito`, `frame_incognito_inactive`, `background_tab_inactive`, `background_tab_incognito_inactive` | `#16161e` | 240 | 15.4% | `#141620` | 229 | 24.0% |
 
 Lightness is held constant (12.5% and 10.2%), so every contrast ratio moves by at most 0.02. The
-other 20 keys were already canonical Storm and are unchanged.
+other 14 keys were already canonical Storm and are unchanged.
 
 ### Accents
 

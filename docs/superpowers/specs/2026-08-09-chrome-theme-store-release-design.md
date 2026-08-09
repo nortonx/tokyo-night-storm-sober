@@ -231,6 +231,18 @@ costs nothing to run. And because the workflow triggers only on `v*` tags pushed
 is never invoked by a pull request from a fork, which is the usual route by which a public
 repository leaks secrets to untrusted code. Do not add a `pull_request` trigger to this workflow.
 
+The federation pool must pin the repository claim. A provider created without an attribute
+condition will mint tokens for any GitHub repository on the platform, not only this one, which
+would let an unrelated repository authenticate as this publisher's service account. The condition
+must assert the exact repository:
+
+```
+assertion.repository == 'nortonx/tokyo-night-storm-sober'
+```
+
+This matters more than repository visibility. A private repository with an unpinned provider is
+worse than a public repository with a pinned one.
+
 ### Out of scope for the pipeline
 
 Listing copy, screenshots, category, and pt-BR listing text are Dashboard-only. The pipeline moves

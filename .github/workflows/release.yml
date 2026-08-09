@@ -134,3 +134,18 @@ jobs:
         run: |
           cog changelog --at "$VERSION" > /tmp/notes.md
           gh release create "$VERSION" --title "$VERSION" --notes-file /tmp/notes.md
+
+      # cog pushes the tag with the ambient GITHUB_TOKEN, and GitHub does not create
+      # workflow runs from GITHUB_TOKEN-triggered pushes, so publish.yml's
+      # `push: tags` trigger never fires for an automated release. Verified: v0.1.0
+      # was tagged and released with zero publish runs. workflow_dispatch is a
+      # documented exception to that rule, so dispatch it explicitly.
+      #
+      # --ref <tag> makes github.ref_type 'tag' and ref_name the tag inside
+      # publish.yml, so its existing version and attach logic works unchanged.
+      - name: Trigger publish
+        if: steps.bump.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: gh workflow run publish.yml --ref "$VERSION"

@@ -1,0 +1,60 @@
+# Fleet release standard, Track B (non-Node + cocogitto).
+# Applied from dotfiles docs/release-standard/templates/cocogitto/cog.toml.
+#
+# Requires cocogitto 7.x. COG_VERSION + COG_SHA256 are pinned in CI (IR10).
+
+tag_prefix = "v"                  # IR8
+ignore_merge_commits = true
+# IR6. CAUTION: this key only DEFINES the marker string. cog appends it ONLY when
+# `cog bump` is invoked with `--skip-ci`. Setting it here and forgetting the flag
+# in CI produces a bump commit with no marker, which retriggers the pipeline.
+skip_ci = "[skip ci]"
+branch_whitelist = ["main"]       # IR3, belt-and-braces with the CI job rules
+
+# REPO-SPECIFIC. A Chrome theme carries its version in manifest.json, and
+# scripts/package.sh refuses to build when that value disagrees with the tag.
+# Without this hook cog would tag v1.1.0 while the manifest still said 1.0.0,
+# and every publish after the first release would fail the version guard.
+# Verified on cog 7.0.0: pre_bump_hook file changes are included in the bump commit.
+pre_bump_hooks = [
+    "python3 scripts/set_version.py {{version}}",
+]
+
+# SINGLE-PHASE RELEASE. These hooks make `cog bump --auto` self-contained:
+# bump, changelog, commit, tag, then push both.
+#
+# Use `git push origin HEAD`, NEVER a bare `git push`. CI checks out a detached HEAD,
+# which sets NO upstream, so a bare push aborts after the bump commit and tag already
+# exist locally.
+post_bump_hooks = [
+    "git push origin HEAD",
+    "git push origin {{version_tag}}",
+]
+
+# IR7 + IR9. template = "remote" produces linked entries (commit shas and authors
+# resolve to forge URLs).
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+owner = "nortonx"
+repository = "tokyo-night-storm-sober"
+
+# Mirrors Track A's releaseRules and hidden-type list exactly, so both tracks bump
+# and hide identically.
+[commit_types]
+perf     = { changelog_title = "Performance", bump_patch = true }
+refactor = { changelog_title = "Refactoring", bump_patch = true }
+chore    = { omit_from_changelog = true }
+ci       = { omit_from_changelog = true }
+build    = { omit_from_changelog = true }
+style    = { omit_from_changelog = true }
+test     = { omit_from_changelog = true }
+docs     = { omit_from_changelog = true }
+
+# IR1, local leg. Run `cog install-hook --all` once per clone to activate; the
+# config alone does not write .git/hooks.
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+cog verify --file $1
+"""

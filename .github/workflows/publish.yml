@@ -1,5 +1,9 @@
-name: release
+name: publish
 
+# Second half of the release chain. release.yml (cocogitto) decides the version,
+# bumps manifest.json, tags, and creates the GitHub Release. Pushing that tag
+# triggers this workflow, which packages and ships to the Chrome Web Store.
+#
 # Tags only. Never add pull_request: a fork PR would expose credentials on
 # this public repository.
 on:
@@ -17,10 +21,28 @@ permissions:
   id-token: write   # mint the federated token
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The store item cannot exist until Google finishes verifying the developer
+      # account, and the API cannot create it. Until the secrets are set, skip the
+      # publishing half rather than failing every release red: a recurring false
+      # failure teaches you to ignore CI. This reports as skipped, never as passed.
+      - name: Is the store configured?
+        id: gate
+        env:
+          ITEM: ${{ secrets.CWS_EXTENSION_ID }}
+          PUBLISHER: ${{ secrets.CWS_PUBLISHER_ID }}
+          WIF: ${{ secrets.GCP_WIF_PROVIDER }}
+        run: |
+          if [ -n "$ITEM" ] && [ -n "$PUBLISHER" ] && [ -n "$WIF" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Web Store secrets not configured; packaging only, not publishing."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Derive version
         id: v
@@ -57,12 +79,14 @@ jobs:
         run: ./scripts/package.sh "$VERSION"
 
       - uses: google-github-actions/auth@v2
+        if: steps.gate.outputs.ready == 'true'
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Upload to the Chrome Web Store
+        if: steps.gate.outputs.ready == 'true'
         env:
           PUBLISHER: ${{ secrets.CWS_PUBLISHER_ID }}
           ITEM: ${{ secrets.CWS_EXTENSION_ID }}
@@ -77,7 +101,7 @@ jobs:
             "https://chromewebstore.googleapis.com/upload/v2/publishers/$PUBLISHER/items/$ITEM:upload"
 
       - name: Publish
-        if: github.ref_type == 'tag' || inputs.publish
+        if: steps.gate.outputs.ready == 'true' && (github.ref_type == 'tag' || inputs.publish)
         env:
           PUBLISHER: ${{ secrets.CWS_PUBLISHER_ID }}
           ITEM: ${{ secrets.CWS_EXTENSION_ID }}
@@ -89,8 +113,29 @@ jobs:
             -X POST -H "Content-Length: 0" \
             "https://chromewebstore.googleapis.com/v2/publishers/$PUBLISHER/items/$ITEM:publish"
 
+      # release.yml already created the Release object for this tag (IR9), so this
+      # uploads an asset to it rather than creating a second one. The tag push that
+      # triggered this workflow races cog's `gh release create`, so wait for it.
       - name: Attach the package to the release
         if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/tokyo-night-storm-reading-${{ steps.v.outputs.version }}.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              break
+            fi
+            echo "waiting for release $TAG to exist (attempt $attempt)"
+            sleep 6
+          done
+          # A tag pushed by hand (the v1.0.0 baseline, or any manual tag) never went
+          # through release.yml, so no Release exists to attach to. Create one rather
+          # than failing; `|| true` covers the race where cog created it meanwhile.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "no release for $TAG; creating one (manually pushed tag)"
+            gh release create "$TAG" --title "$TAG" --generate-notes || true
+          fi
+          gh release upload "$TAG" \
+            "dist/tokyo-night-storm-reading-${VERSION}.zip" --clobber

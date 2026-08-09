@@ -1,0 +1,136 @@
+# Fleet release standard, Track B (cocogitto, GitHub Actions).
+# Applied from dotfiles docs/release-standard/templates/cocogitto/release.yml.
+#
+# First half of the release chain: decide the version, bump manifest.json via
+# cog's pre_bump_hook, write CHANGELOG.md, tag, and create the Release object.
+# Pushing the tag triggers publish.yml, which ships to the Chrome Web Store.
+#
+# Auth: the ambient GITHUB_TOKEN with `permissions: contents: write` is sufficient
+# and no PAT is needed, unless a branch protection ruleset later blocks the Actions
+# bot. If that happens, add a RELEASE_TOKEN secret and export it as GH_TOKEN.
+
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# IR4. cancel-in-progress MUST stay false: cancelling a release mid-push can leave
+# a tag pushed with no Release object.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  COG_VERSION: "7.0.0"        # IR10
+  COG_SHA256: "e03938ff2c4c86d71c00c0f3284dbbe95c5ca76fe34a51f33e945c23010d59bb"
+
+jobs:
+  # IR1 + IR2. GitHub Actions cannot express `needs:` across workflows, so a PR-time
+  # check in a separate workflow CANNOT gate this one. This is the push-time check and
+  # the single fan-in point `release` depends on: add any future required check here,
+  # not to `release`.
+  ci-success:
+    # IR6, the receiving half. skip_ci in cog.toml stamps the marker; this skips on
+    # it. GitHub Actions does not honour [skip ci] natively the way GitLab does, so
+    # without this guard the release commit retriggers this workflow.
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install cocogitto
+        run: |
+          curl -fsSL "https://github.com/cocogitto/cocogitto/releases/download/${COG_VERSION}/cocogitto-${COG_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o /tmp/cog.tar.gz
+          echo "${COG_SHA256}  /tmp/cog.tar.gz" | sha256sum -c -
+          tar xzf /tmp/cog.tar.gz -C /tmp
+          sudo mv /tmp/x86_64-unknown-linux-musl/cog /usr/local/bin/cog
+
+      - name: Check commits since the last tag
+        # --from-latest-tag errors with "unable to get any tag" on a tagless repo,
+        # so pick the form that applies.
+        run: |
+          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
+            cog check --from-latest-tag
+          else
+            # No tags yet. The repository root is GitHub's auto-generated
+            # "Initial commit", which predates conventional commits and can never
+            # be made compliant without rewriting published history. Start one
+            # commit later. cog's RANGE is INCLUSIVE of its left side, unlike
+            # git's A..B, so this names the first commit to check, not the last
+            # to skip. This branch stops running once the first tag exists.
+            ROOT=$(git rev-list --max-parents=0 HEAD)
+            FIRST=$(git rev-list HEAD --not "$ROOT" | tail -1)
+            cog check "${FIRST}..HEAD"
+          fi
+
+      # The theme's own invariants gate the release too: a broken palette or a
+      # missing locale must not reach a tag.
+      - name: Verify theme invariants
+        run: ./scripts/verify.sh
+
+      - name: Assets must match the committed palette
+        run: |
+          python3 scripts/gen_assets.py
+          if ! git diff --quiet -- images store; then
+            echo "Generated assets differ from what is committed." >&2
+            git --no-pager diff --stat -- images store >&2
+            exit 1
+          fi
+
+  release:
+    needs: [ci-success]     # IR2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0      # cog needs full tag history
+
+      - name: Install cocogitto
+        run: |
+          curl -fsSL "https://github.com/cocogitto/cocogitto/releases/download/${COG_VERSION}/cocogitto-${COG_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o /tmp/cog.tar.gz
+          echo "${COG_SHA256}  /tmp/cog.tar.gz" | sha256sum -c -
+          tar xzf /tmp/cog.tar.gz -C /tmp
+          sudo mv /tmp/x86_64-unknown-linux-musl/cog /usr/local/bin/cog
+
+      - name: Bump, tag, push
+        id: bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Decide whether anything is releasable BEFORE bumping, from the dry run.
+          # The version regex is the signal, NOT the exit code: cog exits non-zero
+          # both when nothing is releasable AND when post_bump_hooks fail, and
+          # conflating them turns a failed release green.
+          if ! NEXT="$(cog bump --auto --dry-run 2>&1)"; then
+            echo "cog bump --dry-run failed:"
+            echo "$NEXT"
+            exit 1
+          fi
+          if ! echo "$NEXT" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "No releasable commits since the last tag. cog said: $NEXT"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # IR6: --skip-ci is REQUIRED. The `skip_ci` key in cog.toml only DEFINES
+          # the marker; cog appends it only when this flag is passed.
+          # Any non-zero from here on is a REAL failure.
+          cog bump --auto --skip-ci
+          echo "released=true" >> "$GITHUB_OUTPUT"
+          echo "version=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      # IR9: a Release object, not a bare tag. publish.yml uploads the package to
+      # this release once it has built it.
+      - name: Create GitHub Release
+        if: steps.bump.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          cog changelog --at "$VERSION" > /tmp/notes.md
+          gh release create "$VERSION" --title "$VERSION" --notes-file /tmp/notes.md

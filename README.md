@@ -57,9 +57,16 @@ Established from source, not assumed. Each one shaped a decision here.
 ## Development
 
 ```bash
-./scripts/verify.sh   # store limits CI also checks
-./scripts/package.sh  # build dist/tokyo-night-storm-reading-<version>.zip
+./tests/verify_test.sh   # prove verify.sh's own checks still fire
+./scripts/verify.sh      # the store limits CI also checks
+./scripts/package.sh     # build the store ZIP into dist/
 ```
+
+`verify.sh` is the only thing standing between a bad edit and a store
+rejection, and a check that silently stops checking looks exactly like a
+passing one. `tests/verify_test.sh` breaks one invariant at a time in a
+throwaway copy of the tree and asserts `verify.sh` notices, so CI runs it
+first.
 
 Load unpacked from the repository root via `chrome://extensions`. Chrome writes
 a `Cached Theme.pak` there when it does; it is git-ignored and safe to delete.
@@ -107,3 +114,7 @@ an incognito window.
 package. `store/icon-128.png` is the store listing icon: the same artwork at
 96x96 centred in 128x128 with transparent padding, which the store requires. It
 never ships. Both are committed PNGs; edit them with an image editor.
+
+`verify.sh` checks that the store icon's 16px border is actually transparent,
+and decodes all five PNG row filters to do it, so any normal export works. It
+also checks that every icon and the tile match their declared dimensions.

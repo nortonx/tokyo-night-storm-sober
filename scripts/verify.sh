@@ -1,133 +1,166 @@
 #!/usr/bin/env bash
-# Deliberately no `set -e`: every check must run so the output lists all
-# failures at once, rather than aborting at the first one.
+# Checks the things an external system will reject us for. Nothing else.
+#
+# Deliberately does NOT re-assert the palette against a second copy of itself:
+# editing manifest.json's colours IS the work, not a defect to guard against.
+#
+# No `set -e`: every check runs so the output lists all failures at once.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
 check() { if [ "$2" = "0" ]; then echo "  ok   $1"; else echo "  FAIL $1"; fail=1; fi; }
 
-echo "palette"
+echo "store limits"
 rc=0
 python3 - <<'PY' || rc=$?
-import json, sys
-c = json.load(open('manifest.json'))['theme']['colors']
-expected = {
-    'frame': [24, 27, 40],
-    'omnibox_background': [24, 27, 40],
-    'ntp_background': [24, 27, 40],
-    'frame_inactive': [20, 22, 32],
-    'frame_incognito': [20, 22, 32],
-    'frame_incognito_inactive': [20, 22, 32],
-    'background_tab_inactive': [20, 22, 32],
-    'background_tab_incognito_inactive': [20, 22, 32],
-    'omnibox_text': [115, 218, 202],
-    'toolbar_button_icon': [247, 118, 142],
-}
-unchanged = {
-    'background_tab': [31, 35, 53],
-    'background_tab_incognito': [31, 35, 53],
-    'toolbar': [36, 40, 59],
-    'button_background': [41, 46, 66],
-    'tab_text': [192, 202, 245],
-    'toolbar_text': [192, 202, 245],
-    'bookmark_text': [169, 177, 214],
-    'ntp_text': [192, 202, 245],
-    'ntp_link': [122, 162, 247],
-    'ntp_header': [65, 72, 104],
-    'tab_background_text': [154, 165, 206],
-    'tab_background_text_inactive': [121, 130, 169],
-    'tab_background_text_incognito': [154, 165, 206],
-    'tab_background_text_inactive_incognito': [121, 130, 169],
-}
-bad = []
-for k, v in {**expected, **unchanged}.items():
-    if c.get(k) != v:
-        bad.append(f"{k}: expected {v}, got {c.get(k)}")
-# Every key is named above, so the total pins that none was added or dropped.
-if len(c) != len(expected) + len(unchanged):
-    bad.append(f"key count: expected {len(expected) + len(unchanged)}, got {len(c)}")
-if bad:
-    print("\n".join("    " + b for b in bad)); sys.exit(1)
-PY
-check "all 24 colour keys present: 10 corrected, 14 untouched" "$rc"
-
-echo "i18n"
-rc=0
-python3 - <<'PY' || rc=$?
-import json, sys, os
+import json, re, sys, os, struct, zlib
 errs = []
-m = json.load(open('manifest.json'))
+
+# Chrome rejects the package outright for these.
+m = json.load(open('manifest.json', encoding='utf-8'))
 if m.get('default_locale') != 'en':
     errs.append(f"default_locale: expected 'en', got {m.get('default_locale')!r}")
-if m.get('name') != '__MSG_name__':
-    errs.append(f"name: expected '__MSG_name__', got {m.get('name')!r}")
-if m.get('description') != '__MSG_description__':
-    errs.append(f"description: expected '__MSG_description__', got {m.get('description')!r}")
 
-expected = {
-    'en': {
-        'name': 'Tokyo Night Storm (Reading)',
-        'description': "Tokyo Night Storm with contrast tuned for long reading sessions. Enkia's canonical palette. Mint address bar, red controls.",
-    },
-    'pt_BR': {
-        'name': 'Tokyo Night Storm (Reading)',
-        'description': 'Tokyo Night Storm com contraste ajustado para longas sessões de leitura. Paleta canônica da Enkia. Endereço em verde menta.',
-    },
-}
-for loc, want in expected.items():
+# Colour SHAPE, not colour values. Asserting the values would just compare
+# manifest.json against a copy of itself; asserting the shape catches typos
+# that make Chrome refuse to install the theme.
+theme = m.get('theme')
+if not isinstance(theme, dict) or not isinstance(theme.get('colors'), dict) or not theme['colors']:
+    errs.append('manifest: theme.colors is missing or empty')
+else:
+    for key, val in theme['colors'].items():
+        if not (isinstance(val, list) and len(val) == 3
+                and all(isinstance(c, int) and not isinstance(c, bool) and 0 <= c <= 255
+                        for c in val)):
+            errs.append(f'theme.colors.{key}: {val!r} is not three integers 0-255')
+    for name, path in theme.get('images', {}).items():
+        if not os.path.exists(path):
+            errs.append(f'theme.images.{name}: {path} does not exist')
+        elif not path.lower().endswith('.png'):
+            errs.append(f'theme.images.{name}: {path} is not a PNG; Chrome themes accept no other format')
+
+# cog's pre_bump_hook rewrites the version with a sed that matches this exact
+# shape. Reformat the key and the sed silently no-ops, tagging a release whose
+# manifest still carries the old version.
+if not re.search(r'^  "version": "[0-9]+(\.[0-9]+){0,3}",$',
+                 open('manifest.json', encoding='utf-8').read(), re.M):
+    errs.append('manifest: the version line no longer matches the pattern '
+                'cog.toml\'s sed rewrites; the next release would not bump it')
+
+# Web Store hard limits, listed in README.md's Platform constraints table.
+for loc in ('en', 'pt_BR'):
     path = f'_locales/{loc}/messages.json'
     if not os.path.exists(path):
         errs.append(f'{path}: missing'); continue
-    with open(path, encoding='utf-8') as fh:
-        got = json.load(fh)
-    for key, text in want.items():
-        actual = got.get(key, {}).get('message')
-        if actual != text:
-            errs.append(f'{path}: {key} mismatch')
-        limit = 75 if key == 'name' else 132
-        if actual and len(actual) > limit:
-            errs.append(f'{path}: {key} is {len(actual)} chars, limit {limit}')
-if errs:
-    print("\n".join('    ' + e for e in errs)); sys.exit(1)
-PY
-check "locales present, manifest uses __MSG__ refs, lengths within limits" "$rc"
+    msgs = json.load(open(path, encoding='utf-8'))
+    for key, limit in (('name', 75), ('description', 132)):
+        text = msgs.get(key, {}).get('message')
+        if not text:
+            errs.append(f'{path}: {key} missing')
+        elif len(text) > limit:
+            errs.append(f'{path}: {key} is {len(text)} chars, limit {limit}')
 
-echo "generated assets"
-rc=0
-python3 - <<'PY' || rc=$?
-import json, sys, os, struct
-errs = []
-m = json.load(open('manifest.json'))
-icons = m.get('icons', {})
-for size in ('16', '32', '48', '128'):
-    if icons.get(size) != f'images/icon-{size}.png':
-        errs.append(f'manifest icons[{size}] wrong or missing')
-wanted = [(f'images/icon-{s}.png', int(s), int(s)) for s in ('16','32','48','128')]
-wanted.append(('store/tile-440x280.png', 440, 280))
-wanted.append(('store/icon-128.png', 128, 128))
-for path, w, h in wanted:
+
+# A PNG is an 8-byte signature then chunks of length(4) + tag(4) + data + crc(4).
+# Only IHDR (geometry) and IDAT (pixels) matter here. CRCs go unchecked: a
+# corrupt file fails the geometry or padding check below, which is the outcome
+# worth reporting.
+def read_png(path):
+    data = open(path, 'rb').read()
+    if data[:8] != b'\x89PNG\r\n\x1a\n':
+        return None, b''
+    pos, ihdr, idat = 8, None, b''
+    while pos + 8 <= len(data):
+        (length,) = struct.unpack('>I', data[pos:pos + 4])
+        tag = data[pos + 4:pos + 8]
+        if tag == b'IHDR' and length == 13:
+            ihdr = struct.unpack('>IIBBBBB', data[pos + 8:pos + 21])
+        elif tag == b'IDAT':
+            idat += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+    return ihdr, idat
+
+
+# Undo PNG's per-row filters (spec section 9.2). Every image editor picks these
+# adaptively per row, so reading the rows as raw bytes would reject any icon
+# that had been legitimately re-exported.
+def unfilter(raw, w, h, bpp):
+    stride, out, prev, pos = w * bpp, bytearray(), bytes(w * bpp), 0
+    for _ in range(h):
+        f, line = raw[pos], bytearray(raw[pos + 1:pos + 1 + stride])
+        pos += 1 + stride
+        if f:
+            for i in range(stride):
+                a = line[i - bpp] if i >= bpp else 0
+                b = prev[i]
+                c = prev[i - bpp] if i >= bpp else 0
+                if f == 1:
+                    line[i] = (line[i] + a) & 0xff
+                elif f == 2:
+                    line[i] = (line[i] + b) & 0xff
+                elif f == 3:
+                    line[i] = (line[i] + ((a + b) >> 1)) & 0xff
+                elif f == 4:
+                    pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+                    line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 0xff
+        out += line
+        prev = bytes(line)
+    return bytes(out)
+
+
+# Everything something else reads at a fixed size. A wrong-sized icon or tile is
+# rejected at upload, which is a slow and manual way to find out.
+sized = [(p, int(s), int(s))
+         for s, p in sorted(m.get('icons', {}).items(), key=lambda kv: int(kv[0]))]
+sized += [('store/icon-128.png', 128, 128), ('store/tile-440x280.png', 440, 280)]
+
+store_icon = None
+for path, want_w, want_h in sized:
     if not os.path.exists(path):
-        errs.append(f'{path}: missing'); continue
-    with open(path, 'rb') as fh:
-        head = fh.read(26)
-    if head[:8] != b'\x89PNG\r\n\x1a\n':
-        errs.append(f'{path}: not a PNG'); continue
-    gw, gh = struct.unpack('>II', head[16:24])
-    if (gw, gh) != (w, h):
-        errs.append(f'{path}: expected {w}x{h}, got {gw}x{gh}')
-    # The store icon must carry transparent padding (96x96 art in 128x128), so it
-    # has to be RGBA. The packaged extension icons are full bleed and must not be.
-    ctype = head[25]
-    if path == 'store/icon-128.png' and ctype != 6:
-        errs.append(f'{path}: colour type {ctype}, expected 6 (RGBA) for the padded store icon')
+        errs.append(f'{path}: missing')
+        continue
+    ihdr, idat = read_png(path)
+    if ihdr is None:
+        errs.append(f'{path}: not a PNG')
+        continue
+    if (ihdr[0], ihdr[1]) != (want_w, want_h):
+        errs.append(f'{path}: {ihdr[0]}x{ihdr[1]}, must be {want_w}x{want_h}')
+    if path == 'store/icon-128.png':
+        store_icon = (ihdr, idat)
+
+# The store rejects a listing icon without its transparent padding. RGBA alone
+# is not enough: a fully opaque RGBA file is exactly the icon they reject.
+if store_icon:
+    (w, h, depth, ctype, _, _, interlace), idat = store_icon
+    if ctype != 6:
+        errs.append(f'store/icon-128.png: colour type {ctype}, must be 6 (RGBA) for the padded store icon')
+    elif depth != 8:
+        # The padding check reads one byte per sample. Supporting 16-bit would
+        # mean a second stride calculation for a file we always export as 8.
+        errs.append(f'store/icon-128.png: bit depth {depth}, expected 8')
+    elif interlace:
+        errs.append('store/icon-128.png: interlaced; re-export it without Adam7 interlacing')
+    else:
+        raw = b''
+        try:
+            raw = unfilter(zlib.decompress(idat), w, h, 4)
+        except (zlib.error, IndexError):
+            errs.append('store/icon-128.png: the pixel data does not decode; the file is corrupt')
+        if len(raw) == w * h * 4:
+            pad = (128 - 96) // 2                  # 96x96 of artwork centred in 128x128
+            border = []
+            for y in range(h):
+                alpha = raw[y * w * 4 + 3:(y + 1) * w * 4:4]
+                border += (list(alpha) if y < pad or y >= h - pad
+                           else list(alpha[:pad]) + list(alpha[-pad:]))
+            if any(border):
+                errs.append(f'store/icon-128.png: the {pad}px border is not transparent; '
+                            'the store requires 96x96 artwork padded to 128x128')
+
 if errs:
     print("\n".join('    ' + e for e in errs)); sys.exit(1)
 PY
-check "icons and tile exist at correct dimensions, manifest declares them" "$rc"
-
-rc=0
-python3 scripts/gen_assets.py --check >/dev/null 2>&1 || rc=$?
-check "generated assets match the palette (pixel comparison)" "$rc"
+check "manifest valid for Chrome, locale strings within limits, images correctly sized" "$rc"
 
 echo "packaging"
 rc=0

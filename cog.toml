@@ -16,8 +16,11 @@ branch_whitelist = ["main"]       # IR3, belt-and-braces with the CI job rules
 # Without this hook cog would tag v1.1.0 while the manifest still said 1.0.0,
 # and every publish after the first release would fail the version guard.
 # Verified on cog 7.0.0: pre_bump_hook file changes are included in the bump commit.
+# If this no-ops (the key moved or was reformatted), the version stays stale and
+# package.sh refuses the build with "version mismatch: manifest says X, expected
+# Y". The failure is loud, just one step later than here.
 pre_bump_hooks = [
-    "python3 scripts/set_version.py {{version}}",
+    '''sed -i 's|"version": "[^"]*"|"version": "{{version}}"|' manifest.json''',
 ]
 
 # SINGLE-PHASE RELEASE. These hooks make `cog bump --auto` self-contained:

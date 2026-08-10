@@ -60,18 +60,24 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the verifier
+        run: ./tests/verify_test.sh
+
       - name: Verify invariants
         run: ./scripts/verify.sh
 
-      - name: Assets must match the committed palette
-        # Pixel comparison, not `git diff`: zlib-ng and stock zlib produce
-        # different bytes for identical pixels. See ci.yml.
-        run: python3 scripts/gen_assets.py --check
-
+      # package.sh prints the path it built as its last line. Capturing that
+      # keeps one definition of the artifact name: the two steps below used to
+      # rebuild the string by hand, so a rename broke the upload and the release
+      # attach in the same run.
       - name: Build package
+        id: pkg
         env:
           VERSION: ${{ steps.v.outputs.version }}
-        run: ./scripts/package.sh "$VERSION"
+        run: |
+          set -o pipefail
+          ZIP=$(./scripts/package.sh "$VERSION" | tail -1)
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
 
       - uses: google-github-actions/auth@v2
         if: steps.gate.outputs.ready == 'true'
@@ -85,11 +91,10 @@ jobs:
         env:
           PUBLISHER: ${{ secrets.CWS_PUBLISHER_ID }}
           ITEM: ${{ secrets.CWS_EXTENSION_ID }}
-          VERSION: ${{ steps.v.outputs.version }}
+          ZIP: ${{ steps.pkg.outputs.zip }}
         run: |
           TOKEN=$(gcloud auth print-access-token \
             --scopes="https://www.googleapis.com/auth/chromewebstore")
-          ZIP="dist/tokyo-night-storm-reading-${VERSION}.zip"
           curl --fail-with-body -sS \
             -H "Authorization: Bearer $TOKEN" \
             -X POST -T "$ZIP" \
@@ -116,7 +121,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-          VERSION: ${{ steps.v.outputs.version }}
+          ZIP: ${{ steps.pkg.outputs.zip }}
         run: |
           for attempt in $(seq 1 20); do
             if gh release view "$TAG" >/dev/null 2>&1; then
@@ -132,5 +137,4 @@ jobs:
             echo "no release for $TAG; creating one (manually pushed tag)"
             gh release create "$TAG" --title "$TAG" --generate-notes || true
           fi
-          gh release upload "$TAG" \
-            "dist/tokyo-night-storm-reading-${VERSION}.zip" --clobber
+          gh release upload "$TAG" "$ZIP" --clobber

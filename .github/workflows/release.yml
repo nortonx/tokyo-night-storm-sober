@@ -28,10 +28,6 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-env:
-  COG_VERSION: "7.0.0"        # IR10
-  COG_SHA256: "e03938ff2c4c86d71c00c0f3284dbbe95c5ca76fe34a51f33e945c23010d59bb"
-
 jobs:
   # IR1 + IR2. GitHub Actions cannot express `needs:` across workflows, so a PR-time
   # check in a separate workflow CANNOT gate this one. This is the push-time check and
@@ -48,43 +44,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install cocogitto
-        run: |
-          curl -fsSL "https://github.com/cocogitto/cocogitto/releases/download/${COG_VERSION}/cocogitto-${COG_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o /tmp/cog.tar.gz
-          echo "${COG_SHA256}  /tmp/cog.tar.gz" | sha256sum -c -
-          tar xzf /tmp/cog.tar.gz -C /tmp
-          sudo mv /tmp/x86_64-unknown-linux-musl/cog /usr/local/bin/cog
+      - uses: ./.github/actions/install-cog
 
+      # --from-latest-tag needs a tag to exist. This repo has had one since
+      # v0.1.0, so the tagless fallback that used to sit here is dead code.
       - name: Check commits since the last tag
-        # --from-latest-tag errors with "unable to get any tag" on a tagless repo,
-        # so pick the form that applies.
-        run: |
-          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
-            cog check --from-latest-tag
-          else
-            # No tags yet. The repository root is GitHub's auto-generated
-            # "Initial commit", which predates conventional commits and can never
-            # be made compliant without rewriting published history. Start one
-            # commit later. cog's RANGE is INCLUSIVE of its left side, unlike
-            # git's A..B, so this names the first commit to check, not the last
-            # to skip. This branch stops running once the first tag exists.
-            ROOT=$(git rev-list --max-parents=0 HEAD)
-            FIRST=$(git rev-list HEAD --not "$ROOT" | tail -1)
-            cog check "${FIRST}..HEAD"
-          fi
+        run: cog check --from-latest-tag
 
       # The theme's own invariants gate the release too: a broken palette or a
-      # missing locale must not reach a tag.
+      # missing locale must not reach a tag. The suite runs first, for the same
+      # reason as in ci.yml.
+      - name: Verify the verifier
+        run: ./tests/verify_test.sh
+
       - name: Verify theme invariants
         run: ./scripts/verify.sh
-
-      - name: Assets must match the committed palette
-        # Compares decoded PIXELS, not file bytes. Python's zlib binds to the
-        # system one: Fedora ships zlib-ng, the runner ships stock zlib, and the
-        # same pixels compress to different bytes (379 vs 372 for the store
-        # icon). A `git diff` check here fails on the compressor, not the
-        # palette. Do not reintroduce one.
-        run: python3 scripts/gen_assets.py --check
 
   release:
     needs: [ci-success]     # IR2
@@ -94,12 +68,7 @@ jobs:
         with:
           fetch-depth: 0      # cog needs full tag history
 
-      - name: Install cocogitto
-        run: |
-          curl -fsSL "https://github.com/cocogitto/cocogitto/releases/download/${COG_VERSION}/cocogitto-${COG_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o /tmp/cog.tar.gz
-          echo "${COG_SHA256}  /tmp/cog.tar.gz" | sha256sum -c -
-          tar xzf /tmp/cog.tar.gz -C /tmp
-          sudo mv /tmp/x86_64-unknown-linux-musl/cog /usr/local/bin/cog
+      - uses: ./.github/actions/install-cog
 
       - name: Bump, tag, push
         id: bump

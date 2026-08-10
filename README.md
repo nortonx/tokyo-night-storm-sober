@@ -40,20 +40,36 @@ separation is deliberately below WCAG 1.4.11: `toolbar` against
 carried by label contrast instead, active `#c0caf5` at 9.02:1 against idle
 `#9aa5ce` at 6.41:1. This is a considered decision, not an oversight.
 
+## Platform constraints
+
+Established from source, not assumed. Each one shaped a decision here.
+
+| constraint | source |
+|---|---|
+| Theme images must be PNG. No WebP or JPEG. | [themes docs](https://developer.chrome.com/docs/extensions/develop/ui/themes) |
+| Valid colour keys are fixed by `kOverwritableColorTable`. There is no domain-specific omnibox key and no per-icon key. | [browser_theme_pack.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/themes/browser_theme_pack.cc) |
+| `omnibox_text` applies to the URL host only; scheme and path use a separately derived colour that themes cannot set. | [omnibox_color_mixer.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/ui/color/omnibox_color_mixer.cc) |
+| `default_locale` is required whenever `_locales/` exists. | [default_locale](https://developer.chrome.com/docs/extensions/reference/manifest/default-locale) |
+| `name` max 75 chars; `description` max 132, plain text. | [description](https://developer.chrome.com/docs/extensions/reference/manifest/description) |
+| Screenshots exactly 1280x800 or 640x400, square corners, no padding. Store icon is 96x96 artwork in 128x128 with transparent padding. | [images](https://developer.chrome.com/docs/webstore/images) |
+| The API can update a store item but cannot create one. | [CWS API](https://developer.chrome.com/docs/webstore/using-api) |
+
 ## Development
 
 ```bash
-./scripts/verify.sh            # all invariants; CI runs exactly this
-python3 scripts/gen_assets.py  # regenerate icons and tile from manifest colours
-./scripts/package.sh           # build dist/tokyo-night-storm-reading-<version>.zip
+./tests/verify_test.sh   # prove verify.sh's own checks still fire
+./scripts/verify.sh      # the store limits CI also checks
+./scripts/package.sh     # build the store ZIP into dist/
 ```
+
+`verify.sh` is the only thing standing between a bad edit and a store
+rejection, and a check that silently stops checking looks exactly like a
+passing one. `tests/verify_test.sh` breaks one invariant at a time in a
+throwaway copy of the tree and asserts `verify.sh` notices, so CI runs it
+first.
 
 Load unpacked from the repository root via `chrome://extensions`. Chrome writes
 a `Cached Theme.pak` there when it does; it is git-ignored and safe to delete.
-
-`scripts/gen_assets.py` uses only the Python standard library and is
-byte-deterministic. CI regenerates the assets and fails if they differ from
-what is committed, so an image library must never be introduced here.
 
 The package is built from an allowlist of `manifest.json`, `images/`, and
 `_locales/`. That guards the repository root; anything placed *inside* those
@@ -77,14 +93,17 @@ DevTools and Playwright capture page content, not browser chrome, so these must
 be taken with an OS screenshot tool. `--load-extension` does not apply a theme
 either; install it via `chrome://extensions` first.
 
-Capture the window at any size, then normalise:
+Capture the window at any size, then normalise each one into
+`store/screenshots/`:
 
-    scripts/prepare_screenshots.sh ~/Pictures/shot-*.png
+    magick shot.png -bordercolor none -trim +repage \
+      -background '#181b28' -alpha remove \
+      -resize 1280x800^ -gravity center -extent 1280x800 \
+      -type TrueColor -strip store/screenshots/01-newtab.png
 
-That trims the compositor's rounded corners and drop shadow, which the store
-counts as padding, removes the alpha channel, and fits the result to exactly
-1280x800. Capturing larger than 1280x800 is preferred: downscaling supersamples,
-so text stays crisp. Output lands in `store/screenshots/`.
+The trim removes the compositor's rounded corners and drop shadow, which the
+store counts as padding. Capturing larger than 1280x800 is preferred:
+downscaling supersamples, so text stays crisp. At most five.
 
 Suggested set: new tab, two or three tabs with a URL showing the green domain,
 an incognito window.
@@ -94,4 +113,8 @@ an incognito window.
 `images/icon-128.png` is the extension icon. It is full bleed and ships in the
 package. `store/icon-128.png` is the store listing icon: the same artwork at
 96x96 centred in 128x128 with transparent padding, which the store requires. It
-never ships. Both are generated; do not hand-edit either.
+never ships. Both are committed PNGs; edit them with an image editor.
+
+`verify.sh` checks that the store icon's 16px border is actually transparent,
+and decodes all five PNG row filters to do it, so any normal export works. It
+also checks that every icon and the tile match their declared dimensions.

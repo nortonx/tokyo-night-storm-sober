@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/384cd6ece1959ae4e23b9783fef9424093b71ed0..v0.2.1) - 2026-08-10
+#### Bug Fixes
+- (**verify**) accept any valid PNG and prove the checks still fire - ([7d714cc](https://github.com/nortonx/tokyo-night-storm-sober/commit/7d714cc5343220af6759d3cff63aef6857ad07c7)) - Norton Almeida
+- (**verify**) validate the theme itself, not just the listing - ([c082b2f](https://github.com/nortonx/tokyo-night-storm-sober/commit/c082b2f6520f40e811eebee9a0fa5d56266e740d)) - Norton Almeida
+
+- - -
+
 ## [v0.2.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/2976b080a49b7a800142e39e0e80c0e7804b134c..v0.2.0) - 2026-08-09
 #### Features
 - (**store**) add padded store icon, screenshot pipeline and listing copy - ([cafe612](https://github.com/nortonx/tokyo-night-storm-sober/commit/cafe6120ca25965f8e02fb36e35306140676000f)) - Norton Almeida

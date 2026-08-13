@@ -77,6 +77,10 @@ directories does ship, so keep them clean.
 
 ## Releasing
 
+Merging to `main` releases whatever the conventional commits imply. Run the
+`release` workflow by hand to force a level: `auto` cannot produce a major
+below 1.0.0, because semver makes a breaking change in 0.x a minor.
+
 Tagging `v<version>` builds and publishes the package. The API moves the
 package only. These are Dashboard-only and must be done by hand:
 

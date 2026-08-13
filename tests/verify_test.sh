@@ -209,6 +209,16 @@ mutate_tile_is_the_wrong_size() {
   cp images/icon-128.png store/tile-440x280.png
 }
 
+mutate_screenshots_are_absent() {
+  expect='0 PNGs, the store takes one to five'
+  rm -f store/screenshots/*.png
+}
+
+mutate_screenshot_is_the_wrong_size() {
+  expect='store/screenshots/01-new-tab.png: 128x128, must be 1280x800'
+  cp images/icon-128.png store/screenshots/01-new-tab.png
+}
+
 mutate_store_icon_is_absent() {
   expect='store/icon-128.png: missing'
   rm store/icon-128.png

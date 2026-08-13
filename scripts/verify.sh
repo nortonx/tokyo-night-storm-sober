@@ -13,7 +13,7 @@ check() { if [ "$2" = "0" ]; then echo "  ok   $1"; else echo "  FAIL $1"; fail=
 echo "store limits"
 rc=0
 python3 - <<'PY' || rc=$?
-import json, re, sys, os, struct, zlib
+import glob, json, re, sys, os, struct, zlib
 errs = []
 
 # Chrome rejects the package outright for these.
@@ -113,6 +113,13 @@ def unfilter(raw, w, h, bpp):
 sized = [(p, int(s), int(s))
          for s, p in sorted(m.get('icons', {}).items(), key=lambda kv: int(kv[0]))]
 sized += [('store/icon-128.png', 128, 128), ('store/tile-440x280.png', 440, 280)]
+
+# The listing takes one to five screenshots and rejects any other geometry. The
+# store also accepts 640x400; this repository standardises on the larger one.
+shots = sorted(glob.glob('store/screenshots/*.png'))
+if not 1 <= len(shots) <= 5:
+    errs.append(f'store/screenshots: {len(shots)} PNGs, the store takes one to five')
+sized += [(p, 1280, 800) for p in shots]
 
 store_icon = None
 for path, want_w, want_h in sized:

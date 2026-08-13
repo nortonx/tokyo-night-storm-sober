@@ -77,6 +77,10 @@ directories does ship, so keep them clean.
 
 ## Releasing
 
+Merging to `main` releases whatever the conventional commits imply. Run the
+`release` workflow by hand to force a level: `auto` cannot produce a major
+below 1.0.0, because semver makes a breaking change in 0.x a minor.
+
 Tagging `v<version>` builds and publishes the package. The API moves the
 package only. These are Dashboard-only and must be done by hand:
 
@@ -86,6 +90,32 @@ package only. These are Dashboard-only and must be done by hand:
 - [ ] Store icon `store/icon-128.png` and the tile `store/tile-440x280.png`
 - [ ] Category and language
 - [ ] Privacy tab: no permissions, no data collected
+
+### Store setup, once
+
+`publish.yml` skips its store half until all five of these are set, so a release
+packages and stays green rather than failing red on a missing credential.
+
+| name | kind | where it comes from |
+|---|---|---|
+| `GCP_PROJECT_ID` | variable | the Google Cloud project holding the service account |
+| `GCP_WIF_PROVIDER` | secret | `projects/<number>/locations/global/workloadIdentityPools/github/providers/github` |
+| `GCP_SERVICE_ACCOUNT` | secret | `cws-publisher@<project>.iam.gserviceaccount.com` |
+| `CWS_PUBLISHER_ID` | secret | Dashboard, Publisher then Settings |
+| `CWS_EXTENSION_ID` | secret | the item's 32-character ID, from the Dashboard URL |
+
+The service account needs no IAM role. It needs `roles/iam.workloadIdentityUser`
+granted *to* it for the pool attribute `repository == nortonx/tokyo-night-storm-sober`,
+and its email added under Account in the Chrome Web Store Dashboard. Only one
+service account per publisher is accepted. The provider must carry an attribute
+condition pinning the repository, or any GitHub repository can assume it.
+
+There is no JSON key anywhere, by design. Federation mints a short-lived token
+per run.
+
+To exercise the credentials without submitting anything for review, run the
+`publish` workflow by hand with `publish = false`: it uploads a draft package
+and stops.
 
 ### Screenshots
 
@@ -103,7 +133,8 @@ Capture the window at any size, then normalise each one into
 
 The trim removes the compositor's rounded corners and drop shadow, which the
 store counts as padding. Capturing larger than 1280x800 is preferred:
-downscaling supersamples, so text stays crisp. At most five.
+downscaling supersamples, so text stays crisp. `verify.sh` requires one to five
+PNGs in `store/screenshots/`, each exactly 1280x800.
 
 Suggested set: new tab, two or three tabs with a URL showing the green domain,
 an incognito window.

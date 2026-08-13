@@ -36,8 +36,10 @@ jobs:
           ITEM: ${{ secrets.CWS_EXTENSION_ID }}
           PUBLISHER: ${{ secrets.CWS_PUBLISHER_ID }}
           WIF: ${{ secrets.GCP_WIF_PROVIDER }}
+          SA: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
         run: |
-          if [ -n "$ITEM" ] && [ -n "$PUBLISHER" ] && [ -n "$WIF" ]; then
+          if [ -n "$ITEM" ] && [ -n "$PUBLISHER" ] && [ -n "$WIF" ] && [ -n "$SA" ] && [ -n "$PROJECT" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::Web Store secrets not configured; packaging only, not publishing."

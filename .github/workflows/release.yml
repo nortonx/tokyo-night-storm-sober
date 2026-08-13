@@ -14,6 +14,17 @@ name: release
 on:
   push:
     branches: [main]
+  # `auto` reads the conventional commits, which is right for every ordinary
+  # release. It cannot cut a major below 1.0.0 though: semver says a breaking
+  # change in 0.x is a minor, so `feat!` there yields 0.x+1, not 1.0.0. The
+  # 1.0.0 declaration has to be stated, not inferred.
+  workflow_dispatch:
+    inputs:
+      level:
+        description: 'Bump level'
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
 
 permissions:
   contents: write
@@ -72,14 +83,22 @@ jobs:
 
       - name: Bump, tag, push
         id: bump
+        env:
+          LEVEL: ${{ inputs.level || 'auto' }}
         run: |
+          # The choice input constrains this already; a push event supplies the
+          # literal above. Check it anyway, because LEVEL reaches a command line.
+          case "$LEVEL" in
+            auto|patch|minor|major) ;;
+            *) echo "refusing bump level '$LEVEL'" >&2; exit 1 ;;
+          esac
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Decide whether anything is releasable BEFORE bumping, from the dry run.
           # The version regex is the signal, NOT the exit code: cog exits non-zero
           # both when nothing is releasable AND when post_bump_hooks fail, and
           # conflating them turns a failed release green.
-          if ! NEXT="$(cog bump --auto --dry-run 2>&1)"; then
+          if ! NEXT="$(cog bump "--$LEVEL" --dry-run 2>&1)"; then
             echo "cog bump --dry-run failed:"
             echo "$NEXT"
             exit 1
@@ -92,7 +111,7 @@ jobs:
           # IR6: --skip-ci is REQUIRED. The `skip_ci` key in cog.toml only DEFINES
           # the marker; cog appends it only when this flag is passed.
           # Any non-zero from here on is a REAL failure.
-          cog bump --auto --skip-ci
+          cog bump "--$LEVEL" --skip-ci
           echo "released=true" >> "$GITHUB_OUTPUT"
           echo "version=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 

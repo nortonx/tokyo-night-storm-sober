@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.3.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/5ad6a3df0cb2d99ff53e7d29fcbfae78d53602a5..v0.3.0) - 2026-08-13
+#### Features
+- (**ci**) allow an explicit bump level on release - ([2e7fdcc](https://github.com/nortonx/tokyo-night-storm-sober/commit/2e7fdcc42005d9d60f92183adfb6310497adec25)) - Norton Almeida
+#### Bug Fixes
+- (**ci**) gate publishing on every store credential - ([216de8a](https://github.com/nortonx/tokyo-night-storm-sober/commit/216de8a56979149333c3d0e1f3de458299020707)) - Norton Almeida
+
+- - -
+
 ## [v0.2.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/384cd6ece1959ae4e23b9783fef9424093b71ed0..v0.2.1) - 2026-08-10
 #### Bug Fixes
 - (**verify**) accept any valid PNG and prove the checks still fire - ([7d714cc](https://github.com/nortonx/tokyo-night-storm-sober/commit/7d714cc5343220af6759d3cff63aef6857ad07c7)) - Norton Almeida

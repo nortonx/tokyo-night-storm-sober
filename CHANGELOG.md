@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.0.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/v0.3.0..v1.0.0) - 2026-08-13
+
+- - -
+
 ## [v0.3.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/5ad6a3df0cb2d99ff53e7d29fcbfae78d53602a5..v0.3.0) - 2026-08-13
 #### Features
 - (**ci**) allow an explicit bump level on release - ([2e7fdcc](https://github.com/nortonx/tokyo-night-storm-sober/commit/2e7fdcc42005d9d60f92183adfb6310497adec25)) - Norton Almeida

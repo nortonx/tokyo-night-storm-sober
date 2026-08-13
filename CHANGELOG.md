@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.1.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/52abdaf462ed1a6e1322bb21148ef7de8510fa66..v1.1.0) - 2026-08-13
+#### Features
+- (**icons**) replace the browser mockup with a torii mark - ([52abdaf](https://github.com/nortonx/tokyo-night-storm-sober/commit/52abdaf462ed1a6e1322bb21148ef7de8510fa66)) - Norton Almeida
+
+- - -
+
 ## [v1.0.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/v0.3.0..v1.0.0) - 2026-08-13
 
 - - -

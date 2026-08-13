@@ -210,13 +210,41 @@ mutate_tile_is_the_wrong_size() {
 }
 
 mutate_screenshots_are_absent() {
-  expect='0 PNGs, the store takes one to five'
-  rm -f store/screenshots/*.png
+  expect='0 images, the store takes one to five'
+  rm -f store/screenshots/*.png store/screenshots/*.jpg store/screenshots/*.jpeg
 }
 
-mutate_screenshot_is_the_wrong_size() {
+mutate_screenshot_png_is_the_wrong_size() {
   expect='store/screenshots/01-new-tab.png: 128x128, must be 1280x800'
+  rm -f store/screenshots/*.jpg
   cp images/icon-128.png store/screenshots/01-new-tab.png
+}
+
+# The store refuses alpha on a screenshot while requiring it on the listing
+# icon, so the icon doubles as a ready-made RGBA file to reject here.
+mutate_screenshot_png_has_an_alpha_channel() {
+  expect='has an alpha channel; screenshots must be 24-bit PNG with no alpha'
+  cp store/icon-128.png store/screenshots/04-alpha.png
+}
+
+mutate_screenshot_jpeg_is_not_a_jpeg() {
+  expect='store/screenshots/01-new-tab.jpg: not a JPEG'
+  printf 'this is not a jpeg' > store/screenshots/01-new-tab.jpg
+}
+
+# A JPEG whose SOF says something other than 1280x800 must be caught by the
+# marker walk, not merely by the extension.
+mutate_screenshot_jpeg_is_the_wrong_size() {
+  expect='store/screenshots/01-new-tab.jpg: 64x40, must be 1280x800'
+  python3 - <<'PY'
+import struct
+# Baseline JPEG header only: SOI, APP0, SOF0 declaring 64x40, then EOI. The
+# checker reads geometry and never decodes, so no scan data is needed.
+sof = b'\xff\xc0' + struct.pack('>HBHHB', 17, 8, 40, 64, 3) + bytes(9)
+app0 = b'\xff\xe0' + struct.pack('>H', 16) + b'JFIF\x00\x01\x01\x00' + bytes(7)
+open('store/screenshots/01-new-tab.jpg', 'wb').write(
+    b'\xff\xd8' + app0 + sof + b'\xff\xd9')
+PY
 }
 
 mutate_store_icon_is_absent() {

@@ -81,6 +81,33 @@ def read_png(path):
     return ihdr, idat
 
 
+# JPEG carries its geometry in a start-of-frame marker, so the file has to be
+# walked segment by segment to reach it. SOF0 through SOF15 all describe a
+# frame; DHT (c4), JPG (c8) and DAC (cc) share that range and do not.
+def read_jpeg(path):
+    d = open(path, 'rb').read()
+    if d[:2] != b'\xff\xd8':
+        return None
+    i = 2
+    while i + 9 < len(d):
+        if d[i] != 0xff:
+            i += 1
+            continue
+        marker = d[i + 1]
+        if marker == 0xff:                       # fill byte, legal before a marker
+            i += 1
+            continue
+        if marker in (0xd8, 0xd9) or 0xd0 <= marker <= 0xd7:
+            i += 2
+            continue
+        (seglen,) = struct.unpack('>H', d[i + 2:i + 4])
+        if 0xc0 <= marker <= 0xcf and marker not in (0xc4, 0xc8, 0xcc):
+            h, w = struct.unpack('>HH', d[i + 5:i + 9])
+            return w, h
+        i += 2 + seglen
+    return None
+
+
 # Undo PNG's per-row filters (spec section 9.2). Every image editor picks these
 # adaptively per row, so reading the rows as raw bytes would reject any icon
 # that had been legitimately re-exported.
@@ -114,12 +141,32 @@ sized = [(p, int(s), int(s))
          for s, p in sorted(m.get('icons', {}).items(), key=lambda kv: int(kv[0]))]
 sized += [('store/icon-128.png', 128, 128), ('store/tile-440x280.png', 440, 280)]
 
-# The listing takes one to five screenshots and rejects any other geometry. The
-# store also accepts 640x400; this repository standardises on the larger one.
-shots = sorted(glob.glob('store/screenshots/*.png'))
+# The listing takes one to five screenshots, as JPEG or 24-bit PNG with no
+# alpha, and rejects any other geometry. The store also accepts 640x400; this
+# repository standardises on the larger one. Both formats are allowed here
+# because the Dashboard accepts both and swapping should not need a code change.
+shots = sorted(sum((glob.glob(f'store/screenshots/*.{e}')
+                    for e in ('png', 'jpg', 'jpeg')), []))
 if not 1 <= len(shots) <= 5:
-    errs.append(f'store/screenshots: {len(shots)} PNGs, the store takes one to five')
-sized += [(p, 1280, 800) for p in shots]
+    errs.append(f'store/screenshots: {len(shots)} images, the store takes one to five')
+for path in shots:
+    if path.lower().endswith('.png'):
+        ihdr, _ = read_png(path)
+        if ihdr is None:
+            errs.append(f'{path}: not a PNG'); continue
+        w, h = ihdr[0], ihdr[1]
+        # Colour type 6 and 4 carry an alpha channel, which the store refuses on
+        # screenshots even though it demands one on the listing icon.
+        if ihdr[3] in (4, 6):
+            errs.append(f'{path}: colour type {ihdr[3]} has an alpha channel; '
+                        'screenshots must be 24-bit PNG with no alpha')
+    else:
+        wh = read_jpeg(path)
+        if wh is None:
+            errs.append(f'{path}: not a JPEG'); continue
+        w, h = wh
+    if (w, h) != (1280, 800):
+        errs.append(f'{path}: {w}x{h}, must be 1280x800')
 
 store_icon = None
 for path, want_w, want_h in sized:

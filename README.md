@@ -133,8 +133,14 @@ Capture the window at any size, then normalise each one into
 
 The trim removes the compositor's rounded corners and drop shadow, which the
 store counts as padding. Capturing larger than 1280x800 is preferred:
-downscaling supersamples, so text stays crisp. `verify.sh` requires one to five
-PNGs in `store/screenshots/`, each exactly 1280x800.
+downscaling supersamples, so text stays crisp.
+
+The store takes JPEG or 24-bit PNG with no alpha, and `verify.sh` accepts
+either: one to five files in `store/screenshots/`, each exactly 1280x800, and
+it rejects a PNG carrying an alpha channel. What ships here is JPEG at quality
+92 with no chroma subsampling, since 4:2:0 smears the text in a screenshot:
+
+    magick shot.png -quality 92 -sampling-factor 4:4:4 -strip shot.jpg
 
 Suggested set: new tab, two or three tabs with a URL showing the green domain,
 an incognito window.

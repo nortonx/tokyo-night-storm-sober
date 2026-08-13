@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.1.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/9ec1d80d05cd740177515d7099d614eae854c2ae..v1.1.1) - 2026-08-13
+#### Bug Fixes
+- (**store**) ship the screenshots as JPEG and check both formats - ([9ec1d80](https://github.com/nortonx/tokyo-night-storm-sober/commit/9ec1d80d05cd740177515d7099d614eae854c2ae)) - Norton Almeida
+
+- - -
+
 ## [v1.1.0](https://github.com/nortonx/tokyo-night-storm-sober/compare/52abdaf462ed1a6e1322bb21148ef7de8510fa66..v1.1.0) - 2026-08-13
 #### Features
 - (**icons**) replace the browser mockup with a torii mark - ([52abdaf](https://github.com/nortonx/tokyo-night-storm-sober/commit/52abdaf462ed1a6e1322bb21148ef7de8510fa66)) - Norton Almeida

@@ -87,6 +87,7 @@ Established from source, not assumed. Each one shaped a decision here.
 | `name` max 75 chars; `description` max 132, plain text. | [description](https://developer.chrome.com/docs/extensions/reference/manifest/description) |
 | Screenshots exactly 1280x800 or 640x400, square corners, no padding. Store icon is 96x96 artwork in 128x128 with transparent padding. | [images](https://developer.chrome.com/docs/webstore/images) |
 | The API can update a store item but cannot create one. | [CWS API](https://developer.chrome.com/docs/webstore/using-api) |
+| Incognito windows ignore custom themes entirely. `BrowserThemeProvider::GetThemeSupplier()` returns `nullptr` whenever `incognito_` is set, and incognito profiles are handed exactly that provider. The `*_incognito` keys are valid but inert, so this theme does not ship them. | [theme_service.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/themes/theme_service.cc) |
 | The active tab's fill is `kColorToolbar`. There is no themeable active-tab background, and no key for tab strokes, dividers, outlines or the vertical strip. Dividers are `kColorToolbar` too. | [tab_strip_color_mixer.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/ui/color/tab_strip_color_mixer.cc) |
 | Omit a tab foreground and Chrome generates it to a target ratio (10.46 active, 7.98 idle, 4.5 unfocused) instead of using a theme value. | same |
 | The new tab button's background follows `background_tab`, so it moves with the idle tabs. | same |
@@ -181,7 +182,8 @@ it rejects a PNG carrying an alpha channel. What ships here is JPEG at quality
     magick shot.png -quality 92 -sampling-factor 4:4:4 -strip shot.jpg
 
 Suggested set: new tab, two or three tabs with a URL showing the green domain,
-an incognito window.
+the vertical tab strip collapsed so the active tab's darker chip is visible. Not
+an incognito window: it renders with no theme at all.
 
 ### Two different 128x128 icons
 

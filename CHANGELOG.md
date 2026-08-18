@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.1.2](https://github.com/nortonx/tokyo-night-storm-sober/compare/11a6d939cd1f720487fe06dece0421fbd6aaf361..v1.1.2) - 2026-08-18
+#### Bug Fixes
+- (**theme**) make the active tab findable in the vertical tab strip - ([11a6d93](https://github.com/nortonx/tokyo-night-storm-sober/commit/11a6d939cd1f720487fe06dece0421fbd6aaf361)) - Norton Almeida
+#### Refactoring
+- (**theme**) drop the incognito colours Chrome never applies - ([87a76f5](https://github.com/nortonx/tokyo-night-storm-sober/commit/87a76f558dc4541ea382e791cd9a7c950b4a1ea2)) - Norton Almeida
+
+- - -
+
 ## [v1.1.1](https://github.com/nortonx/tokyo-night-storm-sober/compare/9ec1d80d05cd740177515d7099d614eae854c2ae..v1.1.1) - 2026-08-13
 #### Bug Fixes
 - (**store**) ship the screenshots as JPEG and check both formats - ([9ec1d80](https://github.com/nortonx/tokyo-night-storm-sober/commit/9ec1d80d05cd740177515d7099d614eae854c2ae)) - Norton Almeida

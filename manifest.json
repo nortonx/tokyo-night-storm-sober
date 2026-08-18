@@ -23,16 +23,14 @@
       "frame_incognito": [20, 22, 32],
       "frame_incognito_inactive": [20, 22, 32],
 
-      "background_tab": [31, 35, 53],
-      "background_tab_inactive": [20, 22, 32],
-      "background_tab_incognito": [31, 35, 53],
-      "background_tab_incognito_inactive": [20, 22, 32],
+      "background_tab": [74, 82, 115],
+      "background_tab_inactive": [59, 66, 97],
+      "background_tab_incognito": [74, 82, 115],
+      "background_tab_incognito_inactive": [59, 66, 97],
 
       "tab_text": [192, 202, 245],
-      "tab_background_text": [154, 165, 206],
-      "tab_background_text_inactive": [121, 130, 169],
-      "tab_background_text_incognito": [154, 165, 206],
-      "tab_background_text_inactive_incognito": [121, 130, 169],
+      "tab_background_text": [192, 202, 245],
+      "tab_background_text_incognito": [192, 202, 245],
 
       "toolbar": [36, 40, 59],
       "toolbar_button_icon": [247, 118, 142],

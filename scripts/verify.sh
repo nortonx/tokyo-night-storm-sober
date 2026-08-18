@@ -21,6 +21,24 @@ m = json.load(open('manifest.json', encoding='utf-8'))
 if m.get('default_locale') != 'en':
     errs.append(f"default_locale: expected 'en', got {m.get('default_locale')!r}")
 
+# Chrome silently ignores a colour key it does not recognise, so a typo looks
+# exactly like a working theme. This shipped once: v1.1.1 carried
+# "tab_background_text_inactive_incognito", whose real spelling is
+# "tab_background_text_incognito_inactive", and the colour never applied.
+# Source: kOverwritableColorTable in chrome/browser/themes/browser_theme_pack.cc.
+# If Chrome adds a key, this list has to be extended before the manifest can use
+# it. That is the correct failure direction: loud here, invisible in the browser.
+VALID_COLOR_KEYS = {
+    'background_tab', 'background_tab_inactive', 'background_tab_incognito',
+    'background_tab_incognito_inactive', 'bookmark_text', 'button_background',
+    'frame', 'frame_inactive', 'frame_incognito', 'frame_incognito_inactive',
+    'ntp_background', 'ntp_header', 'ntp_link', 'ntp_text',
+    'omnibox_background', 'omnibox_text', 'tab_background_text',
+    'tab_background_text_inactive', 'tab_background_text_incognito',
+    'tab_background_text_incognito_inactive', 'tab_text', 'toolbar',
+    'toolbar_button_icon', 'toolbar_text',
+}
+
 # Colour SHAPE, not colour values. Asserting the values would just compare
 # manifest.json against a copy of itself; asserting the shape catches typos
 # that make Chrome refuse to install the theme.
@@ -29,6 +47,9 @@ if not isinstance(theme, dict) or not isinstance(theme.get('colors'), dict) or n
     errs.append('manifest: theme.colors is missing or empty')
 else:
     for key, val in theme['colors'].items():
+        if key not in VALID_COLOR_KEYS:
+            errs.append(f'theme.colors.{key}: not a valid theme colour key; '
+                        'Chrome would ignore it silently')
         if not (isinstance(val, list) and len(val) == 3
                 and all(isinstance(c, int) and not isinstance(c, bool) and 0 <= c <= 255
                         for c in val)):

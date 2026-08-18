@@ -33,12 +33,46 @@ accent colour. There is no key that separates URL text from query text.
 
 ### Contrast
 
-All text pairs pass WCAG AA; the weakest is 4.78:1. Surface-to-surface
-separation is deliberately below WCAG 1.4.11: `toolbar` against
-`background_tab` is 1.07:1. Reaching 3:1 would require lightness 52%
-(`#6772a2`), a mid-grey tab strip that is not Tokyo Night. Tab identity is
-carried by label contrast instead, active `#c0caf5` at 9.02:1 against idle
-`#9aa5ce` at 6.41:1. This is a considered decision, not an oversight.
+All text pairs pass WCAG AA; the weakest is the idle tab label at 4.74:1.
+
+Tab identity used to rest entirely on label contrast. That works in the
+horizontal strip and fails completely in Chrome's vertical tab strip collapsed
+to favicons, which has no labels, so the surfaces have to carry the cue alone.
+
+The active tab's fill cannot be themed. `kOverwritableColorTable` has no
+`COLOR_TAB_BACKGROUND_ACTIVE_*` entry, so it falls back to `kColorToolbar`.
+With `toolbar` held at Storm's `#24283b`, the only lever left is the idle tab,
+and the useful direction is counter-intuitive: darkening it is capped at 1.44:1
+even against pure black, while lightening it works, because contrast is
+symmetric and the toolbar never has to move.
+
+| pair | WCAG | APCA |
+|---|---|---|
+| active `#24283b` vs idle `#4a5273` | 1.90 | Lc 17.3 |
+| idle vs strip background `#181b28` | 2.24 | Lc 19.4 |
+| active vs strip background | 1.18 | Lc 5.8 |
+| active label `#c0caf5` vs idle label on its own surface | 9.02 / 4.74 | Lc 77 / 64 |
+
+`background_tab` `#4a5273` is the midpoint of Storm's `fg_gutter #414868` and
+`dark3 #545c7e`. Going lighter is not free: nothing in Tokyo Night reaches AA on
+`#545c7e`, where `#c0caf5` gives 4.05:1 and only pure white passes, so the label
+would have to leave the palette.
+
+Surface separation is still under WCAG 1.4.11's 3:1, which needs `#6874ab`,
+outside the palette entirely. APCA measures dark-on-dark far better than WCAG 2.x
+does, and Lc 17.3 clears its Lc 15 floor for non-text elements. The active tab
+sits close to the strip background (Lc 5.8) and reads as a dark notch between
+lighter chips rather than as a lit chip of its own.
+
+The lighter idle tab also helps favicons, which the theme cannot recolour: a
+near-black favicon goes from 1.12:1 to 2.28:1 against an idle tab. On the active
+tab it stays at 1.19:1 and is effectively invisible. Holding `toolbar` at Storm's
+value makes that unfixable, and it is a real cost of the decision.
+
+`tab_background_text_inactive` is deliberately absent. With it unset, Chrome
+derives the unfocused-window label from `tab_background_text` and guarantees
+4.5:1 against whatever surface ships, instead of a hand-picked value that has to
+be re-tuned whenever a background moves.
 
 ## Platform constraints
 
@@ -53,6 +87,10 @@ Established from source, not assumed. Each one shaped a decision here.
 | `name` max 75 chars; `description` max 132, plain text. | [description](https://developer.chrome.com/docs/extensions/reference/manifest/description) |
 | Screenshots exactly 1280x800 or 640x400, square corners, no padding. Store icon is 96x96 artwork in 128x128 with transparent padding. | [images](https://developer.chrome.com/docs/webstore/images) |
 | The API can update a store item but cannot create one. | [CWS API](https://developer.chrome.com/docs/webstore/using-api) |
+| The active tab's fill is `kColorToolbar`. There is no themeable active-tab background, and no key for tab strokes, dividers, outlines or the vertical strip. Dividers are `kColorToolbar` too. | [tab_strip_color_mixer.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/ui/color/tab_strip_color_mixer.cc) |
+| Omit a tab foreground and Chrome generates it to a target ratio (10.46 active, 7.98 idle, 4.5 unfocused) instead of using a theme value. | same |
+| The new tab button's background follows `background_tab`, so it moves with the idle tabs. | same |
+| An unrecognised colour key is ignored in silence, not rejected. `verify.sh` checks key names for this reason. | [browser_theme_pack.cc](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/themes/browser_theme_pack.cc) |
 
 ## Development
 

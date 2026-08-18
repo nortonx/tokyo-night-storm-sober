@@ -158,6 +158,14 @@ mutate_colour_is_a_hex_string() {
   pyedit manifest.json 'm["theme"]["colors"]["toolbar"] = "#24283b"'
 }
 
+# A key Chrome does not recognise is ignored in silence, so the theme looks
+# healthy and one colour simply never applies. This exact typo shipped in v1.1.1:
+# the real spelling is tab_background_text_incognito_inactive.
+mutate_colour_key_is_misspelled() {
+  expect='not a valid theme colour key'
+  pyedit manifest.json 'm["theme"]["colors"]["tab_background_text_inactive_incognito"] = [121, 130, 169]'
+}
+
 mutate_theme_image_is_absent() {
   expect='does not exist'
   rm images/ntp_background.png
